@@ -383,7 +383,7 @@ class S3FS(FS):
                     if name:
                         _directory.append(name)
 
-        if not _directory:
+        if self.strict and not _directory:
             if not self.getinfo(_path).is_dir:
                 raise errors.DirectoryExpected(path)
 
@@ -394,7 +394,7 @@ class S3FS(FS):
         _path = self.validatepath(path)
         _key = self._path_to_dir_key(_path)
 
-        if not self.isdir(dirname(_path)):
+        if self.strict and not self.isdir(dirname(_path)):
             raise errors.ResourceNotFound(path)
 
         try:
@@ -435,7 +435,7 @@ class S3FS(FS):
             else:
                 if _mode.exclusive:
                     raise errors.FileExists(path)
-                if info.is_dir:
+                if self.strict and info.is_dir:
                     raise errors.FileExpected(path)
 
             obj = self.s3.Object(self._bucket_name, _key)
@@ -550,9 +550,10 @@ class S3FS(FS):
         _s3_key = self._path_to_dir_key(_path)
         prefix_len = len(_s3_key)
 
-        info = self.getinfo(path)
-        if not info.is_dir:
-            raise errors.DirectoryExpected(path)
+        if self.strict:
+            info = self.getinfo(path)
+            if not info.is_dir:
+                raise errors.DirectoryExpected(path)
 
         paginator = self.client.get_paginator("list_objects")
         _paginate = paginator.paginate(
